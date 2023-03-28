@@ -1,0 +1,38 @@
+{
+	debug
+	log default {
+		output file access.log {
+			roll_local_time
+		}
+		include http.log.access
+	}
+}
+
+(options) {
+	@options method OPTIONS
+	respond @options 204
+}
+
+(cros) {
+	header_up Host {http.reverse_proxy.upstream.hostport}
+	header_down Access-Control-Allow-Origin *
+	header_down Access-Control-Allow-Headers *
+	header_down Access-Control-Allow-Methods *
+	header_down Access-Control-Allow-Credentials true
+}
+
+http://localhost:9000 {
+	import options
+
+	@apiV1 {
+		path /api/v1*
+		not method OPTIONS
+	}
+
+	route @apiV1 {
+		uri strip_prefix /api/v1
+		reverse_proxy http://localhost:8090 {
+			import cros
+		}
+	}
+}
